@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Details • EventLocal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+    <!-- HEADER -->
+    <nav class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <i class="fa-solid fa-calendar-day text-3xl text-violet-500"></i>
+                <a href="index.html" class="text-3xl font-bold tracking-tighter">EventLocal</a>
+            </div>
+            <div class="flex items-center gap-x-8 text-sm font-medium">
+                <a href="index.html">Discover</a>
+                <a href="create-event.html" id="nav-create-detail" class="hidden">Create Event</a>
+                <a href="my-events.html" id="nav-my-detail" class="hidden">My Events</a>
+                <button onclick="logout()" id="logout-btn-detail" class="hidden">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="event-content" class="max-w-4xl mx-auto px-6 py-12">
+        <!-- Populated by JS -->
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('id');
+
+        if (!eventId) {
+            window.location.href = 'index.html';
+        }
+
+        async function loadEvent() {
+            try {
+                const res = await fetch(`/api/events/${eventId}`);
+                if (!res.ok) throw new Error('Not found');
+                const event = await res.json();
+
+                const date = new Date(event.date_time);
+                const content = document.getElementById('event-content');
+
+                const html = `
+                    <div class="rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                        ${event.cover_image_url ? 
+                            `<img src="${event.cover_image_url}" class="w-full h-[420px] object-cover">` : 
+                            `<div class="w-full h-[420px] bg-zinc-800 flex items-center justify-center"><i class="fa-solid fa-image text-8xl text-zinc-700"></i></div>`
+                        }
+                        
+                        <div class="p-10">
+                            <div class="flex items-center gap-x-4 mb-6">
+                                <span class="px-5 py-2 bg-violet-500/10 text-violet-400 text-sm font-medium rounded-3xl">${event.category}</span>
+                                <span class="text-emerald-400 text-sm font-medium">${date.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'})}</span>
+                            </div>
+                            
+                            <h1 class="text-5xl font-bold tracking-tighter leading-none mb-4">${event.title}</h1>
+                            
+                            <div class="flex items-center gap-x-8 text-zinc-400 mb-10">
+                                <div class="flex items-center gap-x-3">
+                                    <i class="fa-solid fa-clock text-2xl"></i>
+                                    <div>
+                                        <div class="text-xs">TIME</div>
+                                        <div class="font-medium">${date.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-x-3">
+                                    <i class="fa-solid fa-location-dot text-2xl"></i>
+                                    <div>
+                                        <div class="text-xs">LOCATION</div>
+                                        <div class="font-medium">${event.location}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="prose prose-invert max-w-none text-zinc-300 leading-relaxed text-lg">
+                                ${event.description.replace(/\n/g, '<br>')}
+                            </div>
+                            
+                            <div class="mt-16 border-t border-zinc-800 pt-10 flex items-center justify-between">
+                                <div>
+                                    <div class="text-xs text-zinc-500">Organised by</div>
+                                    <div class="font-semibold text-xl">${event.organiser}</div>
+                                </div>
+                                
+                                <div class="text-right">
+                                    <div id="rsvp-count-display" class="text-4xl font-bold text-violet-400">${event.rsvp_count}</div>
+                                    <div class="text-xs tracking-widest text-zinc-500">PEOPLE INTERESTED</div>
+                                </div>
+                            </div>
+                            
+                            <!-- RSVP Button -->
+                            <div class="mt-10">
+                                <button onclick="handleRSVP(${event.id})" id="rsvp-btn"
+                                        class="w-full bg-white text-zinc-900 py-6 rounded-3xl font-semibold text-2xl hover:bg-amber-300 transition-all flex items-center justify-center gap-x-3">
+                                    <i class="fa-solid fa-hand-wave"></i>
+                                    I'm Interested
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                content.innerHTML = html;
+
+                // Show auth UI
+                const token = localStorage.getItem('token');
+                if (token) {
+                    document.getElementById('nav-create-detail').classList.remove('hidden');
+                    document.getElementById('nav-my-detail').classList.remove('hidden');
+                    document.getElementById('logout-btn-detail').classList.remove('hidden');
+                    document.getElementById('logout-btn-detail').textContent = 'Logout';
+                }
+            } catch (e) {
+                document.getElementById('event-content').innerHTML = `
+                    <div class="text-center py-32">
+                        <i class="fa-solid fa-face-frown text-8xl text-zinc-700"></i>
+                        <h2 class="text-3xl mt-6">Event not found</h2>
+                        <a href="index.html" class="text-violet-400 mt-4 inline-block">← Back to discover</a>
+                    </div>`;
+            }
+        }
+
+        async function handleRSVP(id) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                if (confirm('You need to be logged in to RSVP.\nGo to login page?')) {
+                    window.location.href = 'login.html';
+                }
+                return;
+            }
+
+            const btn = document.getElementById('rsvp-btn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Saving...`;
+
+            try {
+                const res = await fetch(`/api/events/${id}/rsvp`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('rsvp-count-display').textContent = data.rsvp_count;
+                    btn.innerHTML = `✓ You're in!`;
+                    btn.style.backgroundColor = '#22c55e';
+                    btn.style.color = '#fff';
+                } else {
+                    alert('Could not record RSVP');
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-hand-wave"></i> I'm Interested`;
+                }
+            } catch (e) {
+                alert('Network error');
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-hand-wave"></i> I'm Interested`;
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        window.onload = loadEvent;
+    </script>
+</body>
+</html>

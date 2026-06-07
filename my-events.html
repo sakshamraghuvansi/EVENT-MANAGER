@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Events • EventLocal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+    <!-- HEADER -->
+    <nav class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <i class="fa-solid fa-calendar-day text-3xl text-violet-500"></i>
+                <a href="index.html" class="text-3xl font-bold tracking-tighter">EventLocal</a>
+            </div>
+            <div class="flex items-center gap-x-8 text-sm font-medium">
+                <a href="index.html">Discover</a>
+                <a href="create-event.html">Create Event</a>
+                <a href="my-events.html" class="text-violet-400">My Events</a>
+                <button onclick="logout()" class="flex items-center gap-x-2 text-red-400">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-6 py-12">
+        <div class="flex justify-between items-end mb-10">
+            <div>
+                <h1 class="text-5xl font-bold tracking-tighter">My Events</h1>
+                <p class="text-zinc-400">Events you have organised</p>
+            </div>
+            <a href="create-event.html" 
+               class="bg-violet-600 hover:bg-violet-700 px-8 py-4 rounded-3xl font-semibold flex items-center gap-x-3">
+                <i class="fa-solid fa-plus"></i>
+                New Event
+            </a>
+        </div>
+
+        <div id="my-events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- JS populated -->
+        </div>
+
+        <div id="my-empty" class="hidden py-32 text-center">
+            <i class="fa-solid fa-folder-open text-7xl text-zinc-700 mb-6"></i>
+            <h3 class="text-3xl font-semibold mb-3">You haven't created any events yet</h3>
+            <a href="create-event.html" class="inline-block bg-white text-zinc-900 px-10 py-4 rounded-3xl font-semibold">Create your first event</a>
+        </div>
+    </div>
+
+    <script>
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadMyEvents() {
+            const grid = document.getElementById('my-events-grid');
+            const empty = document.getElementById('my-empty');
+            grid.innerHTML = `<div class="col-span-full flex justify-center py-20"><div class="animate-spin w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full"></div></div>`;
+
+            try {
+                const res = await fetch('/api/my-events', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const events = await res.json();
+                grid.innerHTML = '';
+
+                if (events.length === 0) {
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                empty.classList.add('hidden');
+
+                events.forEach(event => {
+                    const date = new Date(event.date_time);
+                    const isPast = date < new Date();
+
+                    const card = document.createElement('div');
+                    card.className = `bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden ${isPast ? 'opacity-75' : ''}`;
+                    card.innerHTML = `
+                        ${event.cover_image_url ? 
+                            `<img src="${event.cover_image_url}" class="w-full h-52 object-cover">` : 
+                            `<div class="w-full h-52 bg-zinc-800 flex items-center justify-center"><i class="fa-solid fa-image text-6xl text-zinc-700"></i></div>`
+                        }
+                        <div class="p-6">
+                            <div class="flex justify-between">
+                                <span class="text-xs uppercase tracking-widest font-mono ${isPast ? 'text-red-400' : 'text-emerald-400'}">
+                                    ${isPast ? 'PAST' : 'UPCOMING'}
+                                </span>
+                                <span onclick="deleteEvent(${event.id}); event.stopImmediatePropagation()" 
+                                      class="text-red-400 hover:text-red-300 cursor-pointer">
+                                    <i class="fa-solid fa-trash"></i>
+                                </span>
+                            </div>
+                            <h3 class="font-semibold text-xl mt-3 mb-1">${event.title}</h3>
+                            <p class="text-sm text-zinc-400">${date.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'})} • ${date.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}</p>
+                            <p class="text-xs text-zinc-500 mt-5">${event.location}</p>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (e) {
+                grid.innerHTML = `<p class="col-span-full text-red-400 text-center">Failed to load your events</p>`;
+            }
+        }
+
+        async function deleteEvent(id) {
+            if (!confirm('Delete this event permanently?')) return;
+
+            try {
+                const res = await fetch(`/api/events/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+
+                if (res.ok) {
+                    loadMyEvents();
+                } else {
+                    alert('Could not delete event');
+                }
+            } catch (e) {
+                alert('Network error');
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        window.onload = loadMyEvents;
+    </script>
+</body>
+</html>

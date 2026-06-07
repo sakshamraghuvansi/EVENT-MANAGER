@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Event • EventLocal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+    <!-- HEADER (same as index) -->
+    <nav class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <i class="fa-solid fa-calendar-day text-3xl text-violet-500"></i>
+                <a href="index.html" class="text-3xl font-bold tracking-tighter">EventLocal</a>
+            </div>
+            <div class="flex items-center gap-x-8 text-sm font-medium">
+                <a href="index.html">Discover</a>
+                <a href="create-event.html" class="text-violet-400">Create Event</a>
+                <a href="my-events.html">My Events</a>
+                <button onclick="logout()" class="flex items-center gap-x-2 text-red-400">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-2xl mx-auto px-6 py-16">
+        <h1 class="text-5xl font-bold tracking-tighter mb-2">Create new event</h1>
+        <p class="text-zinc-400 mb-10">Fill in the details. Your event will be visible instantly.</p>
+
+        <form id="create-form" class="space-y-8">
+            <div>
+                <label class="block text-sm font-medium text-zinc-400 mb-2">Event title</label>
+                <input type="text" id="title" required maxlength="120"
+                       class="w-full bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 text-lg focus:border-violet-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-zinc-400 mb-2">Description <span class="text-xs">(max 500 chars)</span></label>
+                <textarea id="description" required maxlength="500" rows="5"
+                          class="w-full bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 text-lg focus:border-violet-500 outline-none resize-y"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-zinc-400 mb-2">Date &amp; Time</label>
+                    <input type="datetime-local" id="date_time" required
+                           class="w-full bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 text-lg focus:border-violet-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-zinc-400 mb-2">Category</label>
+                    <select id="category" required
+                            class="w-full bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 text-lg focus:border-violet-500 outline-none">
+                        <option value="">Select category</option>
+                        <option value="Tech">Tech</option>
+                        <option value="Arts">Arts &amp; Culture</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Education">Education</option>
+                        <option value="Music">Music</option>
+                        <option value="Business">Business</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-zinc-400 mb-2">Location (city / venue)</label>
+                <input type="text" id="location" required
+                       class="w-full bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 text-lg focus:border-violet-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-zinc-400 mb-2">Cover image URL (optional)</label>
+                <input type="url" id="cover_image_url" placeholder="https://..."
+                       class="w-full bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 text-lg focus:border-violet-500 outline-none">
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-white text-zinc-900 py-6 rounded-3xl font-semibold text-xl hover:bg-amber-300 transition-all active:scale-95">
+                Publish event
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Check auth
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('create-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const payload = {
+                title: document.getElementById('title').value.trim(),
+                description: document.getElementById('description').value.trim(),
+                date_time: document.getElementById('date_time').value,
+                location: document.getElementById('location').value.trim(),
+                category: document.getElementById('category').value,
+                cover_image_url: document.getElementById('cover_image_url').value.trim() || null
+            };
+
+            const btn = e.target.querySelector('button');
+            btn.textContent = 'Publishing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/events', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert('Event published successfully!');
+                    window.location.href = 'my-events.html';
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to create event');
+                }
+            } catch (err) {
+                alert('Network error');
+            } finally {
+                btn.textContent = 'Publish event';
+                btn.disabled = false;
+            }
+        });
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

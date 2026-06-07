@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in • EventLocal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-zinc-950 text-zinc-200 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full px-6">
+        <div class="text-center mb-10">
+            <i class="fa-solid fa-calendar-day text-6xl text-violet-500 mb-4"></i>
+            <h1 class="text-4xl font-bold tracking-tighter">Welcome back</h1>
+            <p class="text-zinc-400 mt-2">Sign in to create and manage events</p>
+        </div>
+
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+            <form id="login-form">
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-zinc-400 mb-2">Email address</label>
+                    <input type="email" id="email" required
+                           class="w-full bg-zinc-800 border border-zinc-700 focus:border-violet-500 rounded-2xl px-5 py-4 outline-none text-lg">
+                </div>
+                
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-zinc-400 mb-2">Password</label>
+                    <input type="password" id="password" required
+                           class="w-full bg-zinc-800 border border-zinc-700 focus:border-violet-500 rounded-2xl px-5 py-4 outline-none text-lg">
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-violet-600 hover:bg-violet-700 py-4 rounded-2xl font-semibold text-lg transition-colors">
+                    Log in
+                </button>
+            </form>
+
+            <div class="mt-8 text-center">
+                <p class="text-zinc-400">
+                    Don't have an account? 
+                    <a href="register.html" class="text-violet-400 hover:text-violet-300 font-medium">Sign up free</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-xs text-zinc-500">
+            Demo account: <span class="font-mono text-emerald-400">demo@example.com</span> / <span class="font-mono text-emerald-400">password123</span>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            const btn = e.target.querySelector('button');
+            const originalText = btn.textContent;
+            btn.textContent = 'Signing in...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('username', data.username);
+                    window.location.href = 'index.html';
+                } else {
+                    alert(data.error || 'Login failed');
+                }
+            } catch (err) {
+                alert('Network error. Please try again.');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventLocal • Discover</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .tail-container { max-width: 1280px; margin: 0 auto; }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 3; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+    <!-- HEADER -->
+    <nav class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
+        <div class="tail-container px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <i class="fa-solid fa-calendar-day text-3xl text-violet-500"></i>
+                <a href="index.html" class="text-3xl font-bold tracking-tighter">EventLocal</a>
+            </div>
+            
+            <div class="flex items-center gap-x-8 text-sm font-medium">
+                <a href="index.html" class="hover:text-white transition-colors">Discover</a>
+                <a href="create-event.html" id="nav-create" class="hover:text-white transition-colors hidden">Create Event</a>
+                <a href="my-events.html" id="nav-my" class="hover:text-white transition-colors hidden">My Events</a>
+                
+                <!-- Auth links -->
+                <div id="auth-guest" class="flex items-center gap-x-4">
+                    <a href="login.html" class="hover:text-white transition-colors">Log in</a>
+                    <a href="register.html" 
+                       class="bg-violet-600 hover:bg-violet-700 px-6 py-2.5 rounded-2xl font-semibold transition-colors">
+                        Sign up free
+                    </a>
+                </div>
+                
+                <div id="auth-user" class="hidden items-center gap-x-4">
+                    <div class="flex items-center gap-x-2">
+                        <div id="user-avatar" 
+                             class="w-8 h-8 bg-violet-500 rounded-2xl flex items-center justify-center text-white font-bold text-sm"></div>
+                        <span id="username-display" class="font-medium"></span>
+                    </div>
+                    <button onclick="logout()" 
+                            class="text-zinc-400 hover:text-red-400 transition-colors flex items-center gap-x-1">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <div class="bg-gradient-to-br from-violet-950 to-zinc-950 py-24">
+        <div class="tail-container px-6">
+            <div class="max-w-2xl">
+                <h1 class="text-6xl font-bold tracking-tighter leading-none mb-4">
+                    What's happening<br>near you today?
+                </h1>
+                <p class="text-xl text-zinc-400 mb-8">
+                    The simplest way to discover local workshops, meetups, hackathons &amp; cultural events.
+                </p>
+                <div class="flex items-center gap-x-4">
+                    <a href="#filters" 
+                       onclick="document.getElementById('search-input').focus()"
+                       class="bg-white text-zinc-900 px-8 py-4 rounded-3xl font-semibold flex items-center gap-x-3 hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <span>Browse events</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTERS &amp; LIST -->
+    <div class="tail-container px-6 py-12" id="filters">
+        <div class="flex flex-col lg:flex-row gap-6 mb-10">
+            <!-- Search -->
+            <div class="flex-1">
+                <div class="relative">
+                    <input id="search-input" 
+                           type="text" 
+                           placeholder="Search by name or keyword..." 
+                           class="w-full bg-zinc-900 border border-zinc-700 focus:border-violet-500 rounded-3xl px-6 py-4 pl-14 text-lg outline-none transition-all">
+                    <i class="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 text-xl"></i>
+                </div>
+            </div>
+            
+            <!-- Category -->
+            <div class="lg:w-80">
+                <select id="category-filter" 
+                        class="w-full bg-zinc-900 border border-zinc-700 focus:border-violet-500 rounded-3xl px-6 py-4 text-lg outline-none transition-all">
+                    <option value="All">All Categories</option>
+                    <option value="Tech">Tech</option>
+                    <option value="Arts">Arts &amp; Culture</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Education">Education</option>
+                    <option value="Music">Music</option>
+                    <option value="Business">Business</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Events Grid -->
+        <div id="events-grid" 
+             class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="hidden py-20 text-center">
+            <i class="fa-solid fa-calendar-xmark text-6xl text-zinc-700 mb-6"></i>
+            <h3 class="text-2xl font-semibold mb-2">No events found</h3>
+            <p class="text-zinc-400">Try changing your filters or search term</p>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-zinc-900 border-t border-zinc-800 py-16">
+        <div class="tail-container px-6 text-center text-zinc-500 text-sm">
+            Built as a complete full-stack demo • Node.js + SQLite + Tailwind • 
+            <span class="text-violet-400">Hyderabad edition</span>
+        </div>
+    </footer>
+
+    <script>
+        // Tailwind script already loaded via CDN
+        function initTailwind() {
+            // No extra config needed
+        }
+
+        let currentToken = null;
+        let currentUsername = null;
+
+        // Update navigation based on auth
+        function updateAuthUI() {
+            currentToken = localStorage.getItem('token');
+            currentUsername = localStorage.getItem('username');
+
+            const guest = document.getElementById('auth-guest');
+            const user = document.getElementById('auth-user');
+            const navCreate = document.getElementById('nav-create');
+            const navMy = document.getElementById('nav-my');
+
+            if (currentToken && currentUsername) {
+                guest.classList.add('hidden');
+                user.classList.remove('hidden');
+                navCreate.classList.remove('hidden');
+                navMy.classList.remove('hidden');
+                
+                document.getElementById('username-display').textContent = currentUsername;
+                const avatar = document.getElementById('user-avatar');
+                avatar.textContent = currentUsername[0].toUpperCase();
+            } else {
+                guest.classList.remove('hidden');
+                user.classList.add('hidden');
+                navCreate.classList.add('hidden');
+                navMy.classList.add('hidden');
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            window.location.href = 'index.html';
+        }
+
+        // Load and render events
+        async function loadEvents(category = 'All', search = '') {
+            const grid = document.getElementById('events-grid');
+            const empty = document.getElementById('empty-state');
+            grid.innerHTML = `
+                <div class="col-span-full flex justify-center py-12">
+                    <div class="animate-spin w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full"></div>
+                </div>
+            `;
+
+            let url = `/api/events?category=${encodeURIComponent(category)}`;
+            if (search.trim()) url += `&search=${encodeURIComponent(search.trim())}`;
+
+            try {
+                const res = await fetch(url);
+                const events = await res.json();
+
+                grid.innerHTML = '';
+
+                if (events.length === 0) {
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                empty.classList.add('hidden');
+
+                events.forEach(event => {
+                    const date = new Date(event.date_time);
+                    const dateStr = date.toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                    const timeStr = date.toLocaleTimeString([], { 
+                        hour: 'numeric', 
+                        minute: '2-digit' 
+                    });
+
+                    const cardHTML = `
+                        <div onclick="window.location.href='event.html?id=${event.id}'" 
+                             class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden cursor-pointer card-hover">
+                            ${event.cover_image_url ? 
+                                `<img src="${event.cover_image_url}" 
+                                      class="w-full h-56 object-cover" alt="${event.title}">` : 
+                                `<div class="w-full h-56 bg-zinc-800 flex items-center justify-center">
+                                    <i class="fa-solid fa-image text-6xl text-zinc-700"></i>
+                                 </div>`
+                            }
+                            <div class="p-6">
+                                <div class="flex gap-2 mb-3">
+                                    <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-2xl bg-violet-500/10 text-violet-400">
+                                        ${event.category}
+                                    </span>
+                                </div>
+                                
+                                <h3 class="font-semibold text-xl leading-tight mb-2 line-clamp-2">${event.title}</h3>
+                                
+                                <div class="flex items-center gap-x-4 text-sm text-zinc-400 mb-4">
+                                    <div class="flex items-center gap-x-1.5">
+                                        <i class="fa-regular fa-calendar"></i>
+                                        <span>${dateStr}</span>
+                                    </div>
+                                    <div class="flex items-center gap-x-1.5">
+                                        <i class="fa-regular fa-clock"></i>
+                                        <span>${timeStr}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-xs text-zinc-500">📍 ${event.location}</div>
+                                        <div class="text-xs text-zinc-500 mt-1">by ${event.organiser}</div>
+                                    </div>
+                                    <button onclick="event.stopImmediatePropagation(); window.location.href='event.html?id=${event.id}'" 
+                                            class="bg-white text-zinc-900 text-sm font-semibold px-5 py-2.5 rounded-2xl hover:bg-amber-300 transition-colors">
+                                        Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.innerHTML += cardHTML;
+                });
+            } catch (e) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-red-400">Failed to load events</div>`;
+            }
+        }
+
+        // Event listeners
+        function setupListeners() {
+            const searchInput = document.getElementById('search-input');
+            const categoryFilter = document.getElementById('category-filter');
+
+            let timeout = null;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    loadEvents(categoryFilter.value, searchInput.value);
+                }, 300);
+            });
+
+            categoryFilter.addEventListener('change', () => {
+                loadEvents(categoryFilter.value, searchInput.value);
+            });
+        }
+
+        // Initialize page
+        window.onload = function() {
+            initTailwind();
+            updateAuthUI();
+            setupListeners();
+            loadEvents();   // initial load with defaults
+        };
+    </script>
+</body>
+</html>
